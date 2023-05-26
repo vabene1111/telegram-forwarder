@@ -40,10 +40,8 @@ def get_channel_name(data, chat_id):
     return "Error"
 
 
-@client.on(events.NewMessage(incoming=True))
+@client.on(events.NewMessage())
 async def tg_incoming_message_handler(event):
-    print('{}'.format(event))
-
     data = load_data()
     if event.message.chat_id == MAIN_GROUP:
         if event.message.text.startswith('/blacklist'):
