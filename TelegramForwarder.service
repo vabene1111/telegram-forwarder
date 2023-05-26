@@ -1,0 +1,12 @@
+[Unit]
+Description=Channel Aggregator
+After=multi-user.target
+
+[Service]
+WorkingDirectory=/path/to/python/
+ExecStart=/usr/bin/python3 /path/to/python/file.py
+User=root
+Restart=on-failure
+
+[Install]
+WantedBy=default.target
