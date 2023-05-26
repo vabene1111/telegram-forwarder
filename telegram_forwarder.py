@@ -44,7 +44,7 @@ def get_channel_name(data, chat_id):
 async def tg_incoming_message_handler(event):
     data = load_data()
     if event.message.chat_id == MAIN_GROUP:
-        if event.message.text.startswith('/blacklist'):
+        if event.message.text.lower().startswith('/blacklist'):
             word = event.message.text.replace('/blacklist', '').strip().lower()
             data['word_blacklist'].append(word)
             save_data(data)
