@@ -17,6 +17,12 @@ client = TelegramClient(
     system_version="4.16.30-vxCUSTOM"
 )
 
+bot = TelegramClient(
+    'bot',
+    config["telegram"]["api_id"],
+    config["telegram"]["api_hash"],
+)
+
 MAIN_GROUP = -952148710
 
 
@@ -24,9 +30,17 @@ def get_channel_list(data):
     chanel_list = []
     for c in data['channels']:
         chanel_list.append(c['chat_id'])
+    return chanel_list
 
 
-@client.on(events.NewMessage())
+def get_channel_name(data, chat_id):
+    for c in data['channels']:
+        if c['chat_id'] == chat_id:
+            return c['name']
+    return "Error"
+
+
+@client.on(events.NewMessage(incoming=True))
 async def tg_incoming_message_handler(event):
     print('{}'.format(event))
 
@@ -48,6 +62,7 @@ async def tg_incoming_message_handler(event):
                 data['messages'].insert(0, event.message.text)
                 data['messages'] = data['messages'][:MESSAGE_STORAGE_LIMIT]
                 save_data(data)
+                await bot.send_message(MAIN_GROUP, f'Found in {get_channel_name(data, event.message.chat_id)}')
                 await client.forward_messages(MAIN_GROUP, event.message)
 
 
@@ -83,6 +98,7 @@ def save_data(data):
 
 client.start(config["telegram"]["client_phone"], config["telegram"]["client_pw"])
 print('Started client')
+bot.start(bot_token=config["telegram"]["bot_token"])
 
 
 async def main():
@@ -92,6 +108,10 @@ async def main():
     #         print(f'{dialog.id}, #{dialog.title}')
 
     print('Listening to incoming messages')
+    # data = load_data()
+    # channel_string = "- \n".join(get_channel_list(data))
+    # blacklist_string = "- \n".join(data["word_blacklist"])
+    # await bot.send_message(MAIN_GROUP, f'Bot started listening to channels:\n { channel_string} \n\n Blacklisted words are:\n{ blacklist_string}')
     await client.run_until_disconnected()
 
 
