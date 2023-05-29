@@ -5,7 +5,7 @@ import os
 from telethon import TelegramClient, events
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MESSAGE_STORAGE_LIMIT = 5000
+MESSAGE_STORAGE_LIMIT = 10000
 
 config = configparser.ConfigParser()
 config.read("config.ini")
@@ -67,7 +67,7 @@ async def tg_incoming_message_handler(event):
 def is_blacklisted(message, data):
     for w in data['word_blacklist']:
         if w.lower() in message.lower():
-            print(f'found blacklisted word {w} in message {message}')
+            print(f'found blacklisted word {w.encode("utf-8")} in message {message.encode("utf-8")}')
             return True
     return False
 
@@ -75,7 +75,7 @@ def is_blacklisted(message, data):
 def is_duplicate(message, data):
     for m in data['messages']:
         if m.lower() in message.lower():
-            print(f'found duplicate message {message}')
+            print(f'found duplicate message {message.encode("utf-8")}')
             return True
     return False
 
