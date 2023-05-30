@@ -74,7 +74,7 @@ def is_blacklisted(message, data):
 
 def is_duplicate(message, data):
     for m in data['messages']:
-        if m.lower() in message.lower():
+        if m.lower() == message.lower():
             print(f'found duplicate message {message.encode("utf-8")}')
             return True
     return False

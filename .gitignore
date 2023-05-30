@@ -3,3 +3,4 @@ config.ini
 data.json
 bot.session
 bot.session-journal
+client.session-journal
