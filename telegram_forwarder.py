@@ -60,7 +60,7 @@ async def tg_incoming_message_handler(event):
                 data['messages'].insert(0, event.message.text)
                 data['messages'] = data['messages'][:MESSAGE_STORAGE_LIMIT]
                 save_data(data)
-                await bot.send_message(MAIN_GROUP, f'Found in {get_channel_name(data, event.message.chat_id)}')
+                #await bot.send_message(MAIN_GROUP, f'Found in {get_channel_name(data, event.message.chat_id)}')
                 await client.forward_messages(MAIN_GROUP, event.message)
 
 
