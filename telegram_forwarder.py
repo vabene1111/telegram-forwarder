@@ -55,21 +55,31 @@ async def tg_incoming_message_handler(event):
         if event.message.text.lower().startswith('/blacklist'):
             word = event.message.text.replace('/blacklist', '').strip().lower()
             if word != '':
-                data['word_blacklist'].append(word)
-                save_data(data)
-                await client.send_message(MAIN_GROUP, f'Added {word} to blacklist')
+                if word in data['word_blacklist']:
+                    data['word_blacklist'].remove(word)
+                    save_data(data)
+                    await client.send_message(MAIN_GROUP, f'⚫ **Removed** {word} to blacklist')
+                else:
+                    data['word_blacklist'].append(word)
+                    save_data(data)
+                    await client.send_message(MAIN_GROUP, f'⚫ Added {word} to blacklist')
             else:
                 blacklist_string = "\n".join(data["word_blacklist"])
-                await client.send_message(MAIN_GROUP, f'**Current Blacklist** \n{blacklist_string}')
+                await client.send_message(MAIN_GROUP, f'⚫ **Current Blacklist** \n{blacklist_string}')
         if event.message.text.lower().startswith('/whitelist'):
             word = event.message.text.replace('/whitelist', '').strip().lower()
             if word != '':
-                data['word_whitelist'].append(word)
-                save_data(data)
-                await client.send_message(MAIN_GROUP, f'Added {word} to whitelist')
+                if word in data['word_whitelist']:
+                    data['word_whitelist'].remove(word)
+                    save_data(data)
+                    await client.send_message(MAIN_GROUP, f'⚪ **Removed** {word} to whitelist')
+                else:
+                    data['word_whitelist'].append(word)
+                    save_data(data)
+                    await client.send_message(MAIN_GROUP, f'⚪ **Added** {word} to whitelist')
             else:
                 whitelist_string = "\n".join(data["word_whitelist"])
-                await client.send_message(MAIN_GROUP, f'**Current Whitelist** \n{whitelist_string}')
+                await client.send_message(MAIN_GROUP, f'⚪ **Current Whitelist** \n{whitelist_string}')
         if event.message.text.startswith('/help'):
             await client.send_message(MAIN_GROUP, f'**TelegramForwarder Version {VERSION}** \n/help to show this message\n/blacklist to show the blacklist\n/blacklist <word> to add or remove a word from the blacklist\n'
                                       + f'/whitelist to show the whitelist\n /whitelist <word> to add or remove a word from the whitelist'
