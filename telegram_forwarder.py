@@ -1,14 +1,17 @@
 import configparser
 import json
 import os
+import traceback
 
 from telethon import TelegramClient, events
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MESSAGE_STORAGE_LIMIT = 10000
+VERSION = '1.0.0'
 
 config = configparser.ConfigParser()
 config.read("config.ini")
+DEBUG = config.getboolean('telegram', 'DEBUG')
 
 client = TelegramClient(
     'client',
@@ -24,6 +27,11 @@ bot = TelegramClient(
 )
 
 MAIN_GROUP = -952148710
+
+
+def debug(message):
+    if DEBUG:
+        print(message)
 
 
 def get_channel_list(data):
@@ -46,28 +54,65 @@ async def tg_incoming_message_handler(event):
     if event.message.chat_id == MAIN_GROUP:
         if event.message.text.lower().startswith('/blacklist'):
             word = event.message.text.replace('/blacklist', '').strip().lower()
-            data['word_blacklist'].append(word)
-            save_data(data)
-            await client.send_message(MAIN_GROUP, f'Added {word} to blacklist')
-        if event.message.text.startswith('/show'):
-            blacklist_string = "**Current Blacklist** \n"
-            for w in data['word_blacklist']:
-                blacklist_string += f'{w}\n'
-            await client.send_message(MAIN_GROUP, blacklist_string)
+            if word != '':
+                data['word_blacklist'].append(word)
+                save_data(data)
+                await client.send_message(MAIN_GROUP, f'Added {word} to blacklist')
+            else:
+                blacklist_string = "\n".join(data["word_blacklist"])
+                await client.send_message(MAIN_GROUP, f'**Current Blacklist** \n{blacklist_string}')
+        if event.message.text.lower().startswith('/whitelist'):
+            word = event.message.text.replace('/whitelist', '').strip().lower()
+            if word != '':
+                data['word_whitelist'].append(word)
+                save_data(data)
+                await client.send_message(MAIN_GROUP, f'Added {word} to whitelist')
+            else:
+                whitelist_string = "\n".join(data["word_whitelist"])
+                await client.send_message(MAIN_GROUP, f'**Current Whitelist** \n{whitelist_string}')
+        if event.message.text.startswith('/help'):
+            await client.send_message(MAIN_GROUP, f'**TelegramForwarder Version {VERSION}** \n/help to show this message\n/blacklist to show the blacklist\n/blacklist <word> to add or remove a word from the blacklist\n'
+                                      + f'/whitelist to show the whitelist\n /whitelist <word> to add or remove a word from the whitelist'
+                                      + '/channel to list channels linked to the bot\n/channel chat_id channel_name')
+        if event.message.text.startswith('/channel'):
+            word = event.message.text.replace('/channel', '').strip().lower()
+            if word != '':
+                try:
+                    chat_id = word.split(' ')[0]
+                    name = ' '.join(word.split(' ')[1:])
+                    data['channels'].append({'chat_id': chat_id, 'name': name})
+                    save_data(data)
+                    await client.send_message(MAIN_GROUP, f'Added channel {name} with chat id {chat_id}')
+                except Exception as e:
+                    traceback.print_exc()
+                    await client.send_message(MAIN_GROUP, f'Failed to add channel with input {event.message.text}')
+            else:
+                channel_string = ''
+                for c in data["channels"]:
+                    channel_string += f'**{c["chat_id"]}** - {c["name"]}'
+                await client.send_message(MAIN_GROUP, f'**Listening to Channels**\n{channel_string}')
     else:
         if event.message.chat_id in get_channel_list(data):
-            if not is_blacklisted(event.message.text, data) and not is_duplicate(event.message.text, data):
+            if is_whitelist(event.message.text, data) or (not is_blacklisted(event.message.text, data) and not is_duplicate(event.message.text, data)):
                 data['messages'].insert(0, event.message.text)
                 data['messages'] = data['messages'][:MESSAGE_STORAGE_LIMIT]
                 save_data(data)
-                #await bot.send_message(MAIN_GROUP, f'Found in {get_channel_name(data, event.message.chat_id)}')
+                # await bot.send_message(MAIN_GROUP, f'Found in {get_channel_name(data, event.message.chat_id)}')
                 await client.forward_messages(MAIN_GROUP, event.message)
 
 
 def is_blacklisted(message, data):
     for w in data['word_blacklist']:
         if w.lower() in message.lower():
-            print(f'found blacklisted word {w.encode("utf-8")} in message {message.encode("utf-8")}')
+            debug(f'found blacklisted word {w.encode("utf-8")} in message {message.encode("utf-8")}')
+            return True
+    return False
+
+
+def is_whitelist(message, data):
+    for w in data['word_whitelist']:
+        if w.lower() in message.lower():
+            debug(f'found whitelisted word {w.encode("utf-8")} in message {message.encode("utf-8")}')
             return True
     return False
 
@@ -75,7 +120,7 @@ def is_blacklisted(message, data):
 def is_duplicate(message, data):
     for m in data['messages']:
         if m.lower() == message.lower():
-            print(f'found duplicate message {message.encode("utf-8")}')
+            debug(f'found duplicate message {message.encode("utf-8")}')
             return True
     return False
 
@@ -84,34 +129,43 @@ def load_data():
     try:
         f = open(os.path.join(BASE_DIR, "data.json"), encoding="UTF-8", )
         data = json.loads(f.read())
+        if 'word_blacklist' not in data:
+            data['word_blacklist'] = []
+        if 'word_whitelist' not in data:
+            data['word_whitelist'] = []
+        if 'channels' not in data:
+            data['channels'] = []
+        if 'messages' not in data:
+            data['messages'] = []
         return data
     except FileNotFoundError:
-        return {}
+        return {'word_blacklist': [], 'word_whitelist': [], 'channels': [], 'messages': []}
 
 
 def save_data(data):
-    f = open(os.path.join(BASE_DIR, "data.json"), "w", encoding="UTF-8", )
+    f = open(os.path.join(BASE_DIR, "data.json"), "w+", encoding="UTF-8", )
     f.write(json.dumps(data))
 
 
 client.start(config["telegram"]["client_phone"], config["telegram"]["client_pw"])
-print('Started client')
+print(f'Started TelegramForwarder client version {VERSION}')
 bot.start(bot_token=config["telegram"]["bot_token"])
 
 
+# TODO all the exception handling / stop detection code does not seem to work
 async def main():
-    print('Listing Channels you are a member of')
-    # async for dialog in client.iter_dialogs():
-    #     if dialog.is_channel:
-    #         print(f'{dialog.id}, #{dialog.title}')
+    await bot.send_message(MAIN_GROUP, f'🥳 Bot started')
 
-    print('Listening to incoming messages')
-    # data = load_data()
-    # channel_string = "- \n".join(get_channel_list(data))
-    # blacklist_string = "- \n".join(data["word_blacklist"])
-    # await bot.send_message(MAIN_GROUP, f'Bot started listening to channels:\n { channel_string} \n\n Blacklisted words are:\n{ blacklist_string}')
-    await client.run_until_disconnected()
+    try:
+        await client.run_until_disconnected()
+    except Exception:
+        await bot.send_message(MAIN_GROUP, f'💥 BOT crashed (1)!')
+    await bot.send_message(MAIN_GROUP, f'🛑 BOT stopped!')
 
 
-with client:
-    client.loop.run_until_complete(main())
+try:
+    with client:
+        client.loop.run_until_complete(main())
+except Exception:
+    bot.send_message(MAIN_GROUP, f'💥 BOT crashed (2)!')
+bot.send_message(MAIN_GROUP, f'🛑 BOT stopped!')
