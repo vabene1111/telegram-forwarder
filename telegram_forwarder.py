@@ -99,7 +99,7 @@ async def tg_incoming_message_handler(event):
             else:
                 channel_string = ''
                 for c in data["channels"]:
-                    channel_string += f'**{c["chat_id"]}** - {c["name"]}'
+                    channel_string += f'**{c["chat_id"]}** - {c["name"]}\n'
                 await client.send_message(MAIN_GROUP, f'**Listening to Channels**\n{channel_string}')
     else:
         if event.message.chat_id in get_channel_list(data):
