@@ -113,7 +113,7 @@ async def tg_incoming_message_handler(event):
 
 def is_blacklisted(message, data):
     for w in data['word_blacklist']:
-        if w.lower() in message.lower():
+        if w.encode("utf-8").lower() in message.encode("utf-8").lower():
             debug(f'found blacklisted word {w.encode("utf-8")} in message {message.encode("utf-8")}')
             return True
     return False
@@ -121,7 +121,7 @@ def is_blacklisted(message, data):
 
 def is_whitelist(message, data):
     for w in data['word_whitelist']:
-        if w.lower() in message.lower():
+        if w.encode("utf-8").lower() in message.encode("utf-8").lower():
             debug(f'found whitelisted word {w.encode("utf-8")} in message {message.encode("utf-8")}')
             return True
     return False
