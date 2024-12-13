@@ -103,8 +103,17 @@ async def tg_incoming_message_handler(event):
                 await client.send_message(MAIN_GROUP, f'**Listening to Channels**\n{channel_string}')
     else:
         if event.message.chat_id in get_channel_list(data):
-            if is_whitelist(event.message.text, data) or (not is_blacklisted(event.message.text, data) and not is_duplicate(event.message.text, data)):
-                data['messages'].insert(0, event.message.text)
+            message_text = event.message.text
+
+            # MAD has random ID's in every post, only take the first part of the post for duplicate/whitelist/blacklist
+            try:
+                if 'check post authenticity by mad team' in message_text.lower():
+                    message_text = message_text.split('\n\n')[0]
+            except Exception as e:
+                pass
+
+            if is_whitelist(message_text, data) or (not is_blacklisted(message_text, data) and not is_duplicate(message_text, data)):
+                data['messages'].insert(0, message_text)
                 data['messages'] = data['messages'][:MESSAGE_STORAGE_LIMIT]
                 save_data(data)
                 # await bot.send_message(MAIN_GROUP, f'Found in {get_channel_name(data, event.message.chat_id)}')
